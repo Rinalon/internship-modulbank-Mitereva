@@ -23,7 +23,7 @@ class Event(Base):
         Index(
             "events_operationId_idx",
               "operationId",
-        )
+        ),
     )
 
     eventId: Mapped[int] = mapped_column(
