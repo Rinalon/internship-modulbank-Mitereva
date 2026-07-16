@@ -8,7 +8,7 @@ from sqlalchemy import (
     DateTime,
     String,
     Enum as SAEnum,
-    CheckConstraint,
+    Identity,
     Index,
     ForeignKey,
     func
@@ -28,8 +28,8 @@ class Event(Base):
 
     eventId: Mapped[int] = mapped_column(
         Integer,
-        primary_key=True,
-        server_default=func.identity(),
+        Identity(start=1, cycle=False),
+        primary_key = True,
     )
 
     type: Mapped[EventTypes] = mapped_column(
