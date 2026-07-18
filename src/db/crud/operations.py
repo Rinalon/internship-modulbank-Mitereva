@@ -8,6 +8,7 @@ from src.core.exceptions import (
     PaymentIdAlreadySetError
 )
 from src.core import OperationStates, validate_change_statuses
+from src.core.exceptions import StatusUnmatchedError
 from datetime import datetime, timezone
 
 async def create_operation(session: AsyncSession, operationData: OperationCreate):
@@ -57,6 +58,8 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
         if validate_change_statuses(operation.status, updData.status):
             operation.status = updData.status
             updated = True
+        else:
+            raise StatusUnmatchedError(operationId, operation.status, updData.status),
 
     if (updData.providerPaymentId is not None and
             operation.providerPaymentId is None):
