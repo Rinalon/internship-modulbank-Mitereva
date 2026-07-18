@@ -35,6 +35,7 @@ def generate_event_types(transitions: dict) -> dict:
 VALID_EVENT_TYPES = generate_event_types(VALID_TRANSITIONS)
 
 SPECIAL_EVENTS = {
+    EventTypes.created: {(None, OperationStates.created)},
     EventTypes.provider_response: {
         (OperationStates.processing, OperationStates.processing),
         (OperationStates.completed, OperationStates.completed),
@@ -49,3 +50,14 @@ SPECIAL_EVENTS = {
 
 for event, pairs in SPECIAL_EVENTS.items():
     VALID_EVENT_TYPES[event] = pairs
+
+def validate_change_statuses(fromStatus: OperationStates, toStatus: OperationStates) -> bool:
+    return toStatus in VALID_TRANSITIONS[fromStatus]
+
+def validate_event_type(
+        event: EventTypes,
+        fromStatus: OperationStates | None,
+        toStatus: OperationStates,
+) -> bool:
+    statuses = (fromStatus, toStatus)
+    return statuses in VALID_EVENT_TYPES[event]

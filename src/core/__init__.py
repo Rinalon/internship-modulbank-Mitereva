@@ -2,9 +2,9 @@ from src.core.config import settings
 from src.core.database import engine, async_engine
 from src.core.state_machine import (
     OperationStates,
-    VALID_TRANSITIONS,
+    validate_change_statuses,
     EventTypes,
-    VALID_EVENT_TYPES
+    validate_event_type
 )
 
 __all__ = [
@@ -12,7 +12,7 @@ __all__ = [
     "engine",
     "async_engine",
     "OperationStates",
-    "VALID_TRANSITIONS",
+    "validate_change_statuses",
     "EventTypes",
-    "VALID_EVENT_TYPES",
+    "validate_event_type",
 ]

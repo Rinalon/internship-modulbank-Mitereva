@@ -7,7 +7,7 @@ from src.core.exceptions import (
     OperationNotFoundError,
     PaymentIdAlreadySetError
 )
-from src.core import OperationStates, VALID_TRANSITIONS
+from src.core import OperationStates, validate_change_statuses
 from datetime import datetime, timezone
 
 async def create_operation(session: AsyncSession, operationData: OperationCreate):
@@ -54,7 +54,7 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
     updated = False
 
     if updData.status is not None:
-        if updData.status in VALID_TRANSITIONS[operation.status]:
+        if validate_change_statuses(operation.status, updData.status):
             operation.status = updData.status
             updated = True
 
