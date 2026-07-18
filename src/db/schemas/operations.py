@@ -6,7 +6,7 @@ from pydantic import (
 from uuid import UUID as PY_UUID
 from datetime import datetime
 from typing import Optional
-from src.models import OperationStates
+from src.db.models import OperationStates
 
 class OperationCreate(BaseModel):
     operationId: str

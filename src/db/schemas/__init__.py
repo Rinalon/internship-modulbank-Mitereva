@@ -1,10 +1,10 @@
-from src.schemas.operations import (
+from src.db.schemas.operations import (
     OperationCreate,
     OperationUpdate,
     OperationResponse
 )
 
-from src.schemas.event import (
+from src.db.schemas.event import (
     EventCreate,
     EventUpdate,
     EventResponse
