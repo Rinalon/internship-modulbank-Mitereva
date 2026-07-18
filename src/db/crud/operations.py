@@ -47,6 +47,13 @@ async def get_operation_for_update(session: AsyncSession, operation_id: str) -> 
     )
     return result.scalar_one_or_none()
 
+async def get_processing_operations(session: AsyncSession) -> list[Operation]:
+    results = await session.execute(
+        select(Operation)
+        .where(Operation.status == OperationStates.processing)
+    )
+    return list(results.scalars().all())
+
 async def update_operation(session: AsyncSession, operationId: str, updData: OperationUpdate) -> None:
     operation = await get_operation_for_update(session, operationId)
     if operation is None:
