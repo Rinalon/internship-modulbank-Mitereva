@@ -4,17 +4,12 @@ from src.db.schemas.operations import (
     OperationResponse
 )
 
-from src.db.schemas.event import (
-    EventCreate,
-    EventUpdate,
-    EventResponse
-)
+from src.db.schemas.event import EventCreate, EventResponse
 
 __all__ = [
     "OperationCreate",
     "OperationUpdate",
     "OperationResponse",
     "EventCreate",
-    "EventUpdate",
     "EventResponse",
 ]

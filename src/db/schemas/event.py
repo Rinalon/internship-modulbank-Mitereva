@@ -17,13 +17,6 @@ class EventCreate(BaseModel):
     toStatus: OperationStates
     message: str = Field(max_length=255)
 
-
-class EventUpdate(BaseModel):
-    type: Optional[EventTypes]
-    providerPaymentId: Optional[PY_UUID] = None
-    fromStatus: Optional[OperationStates] = None
-    toStatus: Optional[OperationStates] = None
-
 class EventResponse(BaseModel):
     type: EventTypes
     operationId: str
