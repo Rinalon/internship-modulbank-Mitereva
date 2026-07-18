@@ -21,6 +21,7 @@ class EventCreate(BaseModel):
     fromStatus: Optional[OperationStates] = None
     toStatus: OperationStates
     message: str = Field(max_length=255)
+    occurredAt: Optional[datetime] = None
 
     @model_validator(mode="after")
     def validate_event(self):

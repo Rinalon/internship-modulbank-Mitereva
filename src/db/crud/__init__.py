@@ -4,8 +4,15 @@ from src.db.crud.operations import (
     update_operation,
 )
 
+from src.db.crud.event import (
+    get_events,
+    create_event,
+)
+
 __all__ = [
     "get_operation",
    "create_operation",
     "update_operation",
+    "get_events",
+    "create_event",
 ]
