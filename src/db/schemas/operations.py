@@ -5,19 +5,14 @@ from pydantic import (
 )
 from uuid import UUID as PY_UUID
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 from src.db.models import OperationStates
 
 class OperationCreate(BaseModel):
     operationId: str
-    amount: str = Field(pattern=r"^\\d+\\.\\d{0,2}$")
-    currency: str = Field(
-        "RUB",
-        pattern=r"^[A-Z]{3}$"
-    )
+    amount: str = Field(pattern=r"^\d+\.\d{0,2}$")
+    currency: str = Literal["RUB"]
     description: Optional[str] = Field(None, max_length=255)
-    status: OperationStates = OperationStates.created
-    providerPaymentId: Optional[PY_UUID] = None
 
 class OperationUpdate(BaseModel):
     status: Optional[OperationStates] = None
