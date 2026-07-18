@@ -13,7 +13,8 @@ from sqlalchemy import (
     ForeignKey,
     func
 )
-from src.db.models import Base, OperationStates, EventTypes
+from src.db.models import Base
+from src.core import OperationStates, EventTypes
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from uuid import UUID as PY_UUID
 from datetime import datetime

@@ -12,7 +12,8 @@ from sqlalchemy import (
     func
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from src.db.models import Base, OperationStates
+from src.db.models import Base
+from src.core import OperationStates
 from uuid import UUID as PY_UUID
 from datetime import datetime
 

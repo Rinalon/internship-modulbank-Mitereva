@@ -2,11 +2,12 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    model_validator
 )
 from uuid import UUID as PY_UUID
 from datetime import datetime
 from typing import Optional
-from src.db.models import EventTypes, OperationStates
+from src.core import OperationStates, EventTypes
 
 
 class EventCreate(BaseModel):

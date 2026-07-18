@@ -1,20 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from src.db.schemas import OperationCreate, OperationUpdate
-from src.db.models import Operation, OperationStates
+from src.db.models import Operation
 from src.core.exceptions import (
     OperationExistsError,
     OperationNotFoundError,
     PaymentIdAlreadySetError
 )
+from src.core import OperationStates, VALID_TRANSITIONS
 from datetime import datetime, timezone
-
-VALID_TRANSITIONS = {
-    OperationStates.created: {OperationStates.processing},
-    OperationStates.processing: {OperationStates.completed, OperationStates.rejected},
-    OperationStates.completed: set(),
-    OperationStates.rejected: set(),
-}
 
 async def create_operation(session: AsyncSession, operationData: OperationCreate):
     operation = await get_operation(session, operationData.operationId)
