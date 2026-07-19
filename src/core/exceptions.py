@@ -23,6 +23,13 @@ class PaymentIdAlreadySetError(AppError):
             f"ProviderPaymentId for operation {operation_id} already installed"
         )
 
+class PaymentIdMissmatchError(AppError):
+    def __init__(self, operation_id: str):
+        self.operation_id = operation_id
+        super().__init__(
+            f"ProviderPaymentId for operation {operation_id} mismatch"
+        )
+
 class StatusUnmatchedError(AppError):
     def __init__(self,
                  operationId: str,

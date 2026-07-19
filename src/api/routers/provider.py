@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from src.db.schemas import OperationUpdate, ReceiptData, EventCreate
-from src.db.crud import update_operation, get_status, create_event
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from src.core.exceptions import ProviderUnavailableError, ProviderError
+from src.db.schemas import OperationUpdate, ReceiptData, EventCreate
+from src.db.crud import update_operation, process_receipt
+from src.core.exceptions import (
+    ProviderUnavailableError,
+    ProviderError,
+    OperationNotFoundError,
+    PaymentIdMissmatchError
+)
 from src.core import settings, AsyncSessionLocal, get_db, EventTypes
 from tenacity import (
     retry,
@@ -11,8 +16,6 @@ from tenacity import (
     retry_if_exception_type
 )
 import httpx
-
-router = APIRouter(tags=["provider"])
 
 
 @retry(
@@ -56,27 +59,15 @@ async def send_to_provider(operationId: str, amount: str, currency: str = "RUB")
     else:
         raise ProviderError(f"Unexpected status: {response.status_code}")
 
+
+router = APIRouter(tags=["provider"])
 @router.post("/receipts", status_code=204)
 async def handle_receipt(data: ReceiptData, session: AsyncSession = Depends(get_db)):
-    operationId = data.operationId
-    opStatus = await get_status(session, operationId)
-
-    event = EventCreate(
-        type=EventTypes.provider_response,
-        operationId=operationId,
-        providerPaymentId=data.providerPaymentId,
-        fromStatus=opStatus,
-        toStatus=opStatus,
-        message=data.message,
-        occurredAt=data.occurredAt
-    )
-    await create_event(session, event)
-
-
-    updData = OperationUpdate(
-        providerPaymentId=data.providerPaymentId,
-        status=data.result,
-    )
-    await update_operation(session, operationId, updData)
-
+    try:
+        await process_receipt(session, data)
+        await session.commit()
+    except OperationNotFoundError:
+        raise HTTPException(404, "Operation not found")
+    except PaymentIdMissmatchError:
+        raise HTTPException(409, "ProviderPaymentId mismatch")
     return

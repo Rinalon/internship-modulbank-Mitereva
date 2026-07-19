@@ -3,6 +3,7 @@ from src.db.crud.operations import (
     create_operation,
     update_operation,
     get_status,
+    process_receipt
 )
 
 from src.db.crud.event import (
@@ -17,4 +18,5 @@ __all__ = [
     "get_events",
     "create_event",
     "get_status",
+    "process_receipt",
 ]

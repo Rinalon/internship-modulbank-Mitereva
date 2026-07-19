@@ -1,11 +1,12 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from src.db.schemas import OperationCreate, OperationUpdate
+from src.db.schemas import OperationCreate, OperationUpdate, ReceiptData
 from src.db.models import Operation, Event
 from src.core.exceptions import (
     OperationExistsError,
     OperationNotFoundError,
-    PaymentIdAlreadySetError
+    PaymentIdAlreadySetError,
+    PaymentIdMissmatchError,
 )
 from src.core import OperationStates, validate_change_statuses, EventTypes
 from src.core.exceptions import StatusUnmatchedError
@@ -82,7 +83,7 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
         raise OperationNotFoundError(operationId),
 
     updated = False
-    new_event = Event(operationId=operationId, message="")
+    new_event = Event(type=EventTypes.processing, operationId=operationId, message="")
 
     if updData.status is not None:
         if validate_change_statuses(operation.status, updData.status):
@@ -112,3 +113,61 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
         session.add(new_event)
         await session.commit()
         await session.refresh(operation)
+
+async def process_receipt(session: AsyncSession, data: ReceiptData):
+    operationId = data.operationId
+    operation = await get_operation_for_update(session, operationId)
+
+    if operation is None:
+        raise OperationNotFoundError(operationId)
+
+    if (operation.providerPaymentId is not None and
+            operation.providerPaymentId != data.providerPaymentId):
+        raise PaymentIdMissmatchError(operationId)
+
+    if operation.status in (OperationStates.completed, OperationStates.rejected):
+        ignore_event = Event(
+            type=EventTypes.receipt_ignored,
+            operationId=operationId,
+            fromStatus=operation.status,
+            toStatus=operation.status,
+            message=f"Ignored receipt for already completed operation",
+            occurredAt=data.occurredAt,
+        )
+        session.add(ignore_event)
+        await session.commit()
+        return
+
+    provider_event = Event(
+        type=EventTypes.provider_response,
+        operationId=operationId,
+        providerPaymentId=data.providerPaymentId,
+        fromStatus=operation.status,
+        toStatus=operation.status,
+        message=data.message,
+        occurredAt=data.occurredAt
+    )
+    session.add(provider_event)
+
+    if data.result == OperationStates.completed:
+        updType = EventTypes.completed
+    else:
+        updType = EventTypes.rejected
+
+    updated_event = Event(
+        type=updType,
+        operationId=operationId,
+        fromStatus=operation.status,
+        toStatus=data.result,
+        message=f"Status changed to {data.result} via receipt",
+        occurredAt=datetime.now(timezone.utc),
+    )
+
+    if operation.providerPaymentId is None:
+        operation.providerPaymentId = data.providerPaymentId
+
+    operation.status = data.result
+    operation.updatedAt = datetime.now(timezone.utc)
+
+    session.add(updated_event)
+    await session.commit()
