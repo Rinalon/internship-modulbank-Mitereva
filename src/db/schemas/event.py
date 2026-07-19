@@ -19,7 +19,7 @@ class EventCreate(BaseModel):
     operationId: str
     providerPaymentId: Optional[PY_UUID] = None
     fromStatus: Optional[OperationStates] = None
-    toStatus: OperationStates
+    toStatus: Optional[OperationStates] = None
     message: str = Field(max_length=255)
     occurredAt: Optional[datetime] = None
 

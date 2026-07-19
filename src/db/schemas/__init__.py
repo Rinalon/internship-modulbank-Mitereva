@@ -5,6 +5,7 @@ from src.db.schemas.operations import (
 )
 
 from src.db.schemas.event import EventCreate, EventResponse
+from src.db.schemas.receipt import ReceiptData
 
 __all__ = [
     "OperationCreate",
@@ -12,4 +13,5 @@ __all__ = [
     "OperationResponse",
     "EventCreate",
     "EventResponse",
+    "ReceiptData",
 ]

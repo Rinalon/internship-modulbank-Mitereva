@@ -49,13 +49,25 @@ async def get_operation(session: AsyncSession, operationId: str) -> Operation | 
     )
     return result.scalar_one_or_none()
 
-async def get_operation_for_update(session: AsyncSession, operation_id: str) -> Operation | None:
+async def get_operation_for_update(session: AsyncSession, operationId: str) -> Operation | None:
     result = await session.execute(
         select(Operation)
-        .where(Operation.operationId == operation_id)
+        .where(Operation.operationId == operationId)
         .with_for_update()
     )
     return result.scalar_one_or_none()
+
+async def get_status(session: AsyncSession, operationId: str) -> OperationStates | None:
+    result = await session.execute(
+        select(Operation)
+        .where(Operation.operationId == operationId))
+
+    result = result.scalar_one_or_none()
+
+    if result is None:
+        raise OperationNotFoundError(operationId)
+
+    return result.status
 
 async def get_processing_operations(session: AsyncSession) -> list[Operation]:
     results = await session.execute(

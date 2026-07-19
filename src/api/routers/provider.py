@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
-from src.db.schemas import OperationUpdate
-from src.db.crud import update_operation
+from src.db.schemas import OperationUpdate, ReceiptData, EventCreate
+from src.db.crud import update_operation, get_status, create_event
+from sqlalchemy.ext.asyncio.session import AsyncSession
 from src.core.exceptions import ProviderUnavailableError, ProviderError
-from src.core import settings, AsyncSessionLocal
+from src.core import settings, AsyncSessionLocal, get_db, EventTypes
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_exponential,
     retry_if_exception_type
 )
-import asyncio
 import httpx
 
 router = APIRouter(tags=["provider"])
@@ -56,6 +56,27 @@ async def send_to_provider(operationId: str, amount: str, currency: str = "RUB")
     else:
         raise ProviderError(f"Unexpected status: {response.status_code}")
 
-@router.post("/receipts")
-async def handle_receipt(data: OperationUpdate):
-    pass
+@router.post("/receipts", status_code=204)
+async def handle_receipt(data: ReceiptData, session: AsyncSession = Depends(get_db)):
+    operationId = data.operationId
+    opStatus = await get_status(session, operationId)
+
+    event = EventCreate(
+        type=EventTypes.provider_response,
+        operationId=operationId,
+        providerPaymentId=data.providerPaymentId,
+        fromStatus=opStatus,
+        toStatus=opStatus,
+        message=data.message,
+        occurredAt=data.occurredAt
+    )
+    await create_event(session, event)
+
+
+    updData = OperationUpdate(
+        providerPaymentId=data.providerPaymentId,
+        status=data.result,
+    )
+    await update_operation(session, operationId, updData)
+
+    return
