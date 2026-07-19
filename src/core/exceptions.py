@@ -38,3 +38,13 @@ class EventTypeError(AppError):
         super().__init__(
             f"Invalid event type"
         )
+
+class ProviderUnavailableError(AppError):
+    def __init__(self):
+        super().__init__(
+            f"Provider unavailable"
+        )
+
+class ProviderError(AppError):
+    def __init__(self, message: str):
+        super().__init__(message)

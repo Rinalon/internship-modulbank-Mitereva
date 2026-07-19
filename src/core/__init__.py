@@ -1,5 +1,10 @@
 from src.core.config import settings
-from src.core.database import engine, async_engine, get_db
+from src.core.database import (
+    engine,
+    async_engine,
+    get_db,
+    AsyncSessionLocal
+)
 from src.core.state_machine import (
     OperationStates,
     validate_change_statuses,
@@ -15,5 +20,6 @@ __all__ = [
     "validate_change_statuses",
     "EventTypes",
     "validate_event_type",
-    "get_db"
+    "get_db",
+    "AsyncSessionLocal"
 ]

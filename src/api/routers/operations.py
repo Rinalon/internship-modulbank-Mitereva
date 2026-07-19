@@ -54,7 +54,7 @@ async def create_operation(operation_data: OperationCreate, session: AsyncSessio
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{id}/submit", response_model=OperationResponse)
-async def submit_operation(id: str, session: AsyncSession = Depends(get_db)):
+async def submit_operation(id: str,session: AsyncSession = Depends(get_db)):
     operation = await read_operation(session, id)
 
     if operation is None:

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PASS: str
     DB_NAME: str
+    PROVIDER_URL: str
     DEBUG: bool = True
 
     model_config = SettingsConfigDict(
