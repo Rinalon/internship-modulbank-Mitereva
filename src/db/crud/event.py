@@ -28,16 +28,7 @@ async def create_event(session: AsyncSession, event: EventCreate) -> Event:
     if operation is None:
         raise OperationNotFoundError(operationId)
 
-    new_event = Event(
-        operationId=operationId,
-        type=event.type,
-        providerPaymentId=event.providerPaymentId,
-        fromStatus=event.fromStatus,
-        toStatus=event.toStatus,
-        message=event.message,
-        occurredAt=event.occurredAt or datetime.now(timezone.utc),
-    )
-    session.add(new_event)
+    session.add(event)
     await session.commit()
-    await session.refresh(new_event)
-    return new_event
+    await session.refresh(event)
+    return event
