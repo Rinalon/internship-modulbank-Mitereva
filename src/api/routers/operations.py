@@ -47,15 +47,6 @@ async def create_operation(operation_data: OperationCreate, session: AsyncSessio
     try:
         new_operation = await create_operation(session, operation_data)
 
-        event = EventCreate(
-            type=EventTypes.created,
-            operationId=new_operation.operationId,
-            fromStatus=None,
-            toStatus=OperationStates.created,
-            message=f"Create operation {new_operation.operationId}"
-        )
-        await create_event(session, event)
-
         return new_operation
     except OperationExistsError:
         raise HTTPException(status_code=409, detail="Operation already exists")
@@ -84,7 +75,7 @@ async def submit_operation(id: str, session: AsyncSession = Depends(get_db)):
     await update_operation(session=session, updData=changes, operationId=id)
     await create_event(session=session, event=event)
 
-    asyncio.create_task(send_to_provider(id))
+    asyncio.create_task(send_to_provider(id, operation.amount))
 
     response_data = OperationResponse.model_validate(operation)
     return JSONResponse(status_code=202, content=response_data.model_dump())

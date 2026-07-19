@@ -7,17 +7,11 @@ from src.core.exceptions import OperationNotFoundError
 
 from datetime import datetime, timezone
 
-async def get_events(session: AsyncSession,
-                     operationId: str,
-                     limit: int = 10,
-                     offset: int = 0,
-                     ) -> list[Event]:
+async def get_events(session: AsyncSession, operationId: str) -> list[Event]:
     results = await session.execute(
         select(Event)
         .where(Event.operationId == operationId)
         .order_by(Event.eventId)
-        .limit(limit)
-        .offset(offset)
     )
     return list(results.scalars().all())
 
@@ -38,6 +32,8 @@ async def create_event(session: AsyncSession, event: EventCreate) -> Event:
         occurredAt=event.occurredAt or datetime.now(timezone.utc),
     )
     session.add(new_event)
+
     await session.commit()
     await session.refresh(new_event)
+
     return new_event
