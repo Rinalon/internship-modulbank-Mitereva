@@ -83,19 +83,26 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
         raise OperationNotFoundError(operationId)
 
     updated = False
-    new_event = Event(type=EventTypes.processing, operationId=operationId, message="")
+    new_event = Event(
+        type=EventTypes.processing,
+        operationId=operationId,
+        fromStatus=operation.status,
+        message=""
+    )
 
     if updData.status is not None:
         if validate_change_statuses(operation.status, updData.status):
             operation.status = updData.status
-
             updated = True
-            new_event.status = updData.status
+
+            new_event.toStatus = updData.status
             new_event.message += f"Change status from {operation.status} to {updData.status}. "
         else:
             raise StatusUnmatchedError(operationId, operation.status, updData.status)
 
     if updData.providerPaymentId is not None:
+        new_event.type = EventTypes.provider_response
+
         if operation.providerPaymentId is None:
             operation.providerPaymentId = updData.providerPaymentId
 
@@ -107,6 +114,8 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
             raise PaymentIdAlreadySetError(operationId)
 
     if updated:
+        new_event.toStatus = new_event.toStatus or OperationStates.processing
+
         operation.updatedAt = datetime.now(timezone.utc)
         new_event.occurredAt = datetime.now(timezone.utc)
 
@@ -121,10 +130,6 @@ async def process_receipt(session: AsyncSession, data: ReceiptData):
     if operation is None:
         raise OperationNotFoundError(operationId)
 
-    if (operation.providerPaymentId is not None and
-            operation.providerPaymentId != data.providerPaymentId):
-        raise PaymentIdMissmatchError(operationId)
-
     if operation.status in (OperationStates.completed, OperationStates.rejected):
         ignore_event = Event(
             type=EventTypes.receipt_ignored,
@@ -137,6 +142,9 @@ async def process_receipt(session: AsyncSession, data: ReceiptData):
         session.add(ignore_event)
         await session.commit()
         return
+    if (operation.providerPaymentId is not None and
+            operation.providerPaymentId != data.providerPaymentId):
+        raise PaymentIdMissmatchError(operationId)
 
     provider_event = Event(
         type=EventTypes.provider_response,
