@@ -1,16 +1,19 @@
 import pytest
 from datetime import datetime, timezone
-from sqlalchemy.exc import IntegrityError
-from src.db.crud.operations import (
+from src.db.crud import (
     create_operation,
     get_operation,
-    get_operation_for_update,
-    get_status,
     get_processing_operations,
     update_operation,
     process_receipt,
+    create_event
 )
-from src.db.schemas import OperationCreate, OperationUpdate, ReceiptData
+from src.db.schemas import (
+    OperationCreate,
+    OperationUpdate,
+    ReceiptData,
+    EventCreate,
+)
 from src.core import OperationStates, EventTypes
 from src.core.exceptions import (
     OperationExistsError,
@@ -242,3 +245,15 @@ async def test_get_processing_operations(session):
     procs = await get_processing_operations(session)
     assert len(procs) == 1
     assert procs[0].operationId == "proc-1"
+
+@pytest.mark.asyncio
+async def test_create_event_operation_not_found(session):
+    event_data = EventCreate(
+        type=EventTypes.created,
+        operationId="nonexistent",
+        fromStatus=None,
+        toStatus=OperationStates.created,
+        message="Should fail",
+    )
+    with pytest.raises(OperationNotFoundError):
+        await create_event(session, event_data)
