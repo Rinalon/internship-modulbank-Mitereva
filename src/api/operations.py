@@ -42,7 +42,7 @@ async def get_events(id: str, session: AsyncSession = Depends(get_db)):
     except OperationNotFoundError:
         raise HTTPException(status_code=404, detail="Operation not found")
 
-@router.post("/", response_model=OperationResponse)
+@router.post("/", response_model=OperationResponse, status_code=201)
 async def create_operation(operation_data: OperationCreate, session: AsyncSession = Depends(get_db)):
     try:
         new_operation = await create_operation(session, operation_data)
