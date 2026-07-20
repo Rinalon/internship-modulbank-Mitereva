@@ -21,7 +21,7 @@ from src.db.crud import (
     get_events as read_events,
     create_event
 )
-from src.api.routers.provider import send_to_provider
+from src.services import send_to_provider
 
 router = APIRouter(prefix="/operations", tags=["operations"])
 

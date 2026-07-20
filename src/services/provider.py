@@ -1,22 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from src.db.schemas import OperationUpdate
+from src.db.crud import update_operation, get_processing_operations
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from src.db.schemas import OperationUpdate, ReceiptData, EventCreate
-from src.db.crud import update_operation, process_receipt
-from src.core.exceptions import (
-    ProviderUnavailableError,
-    ProviderError,
-    OperationNotFoundError,
-    PaymentIdMissmatchError
-)
-from src.core import settings, AsyncSessionLocal, get_db, EventTypes
+from src.core.exceptions import ProviderUnavailableError, ProviderError
+from src.core import settings, AsyncSessionLocal
+
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_exponential,
     retry_if_exception_type
 )
+import asyncio
 import httpx
-
 
 @retry(
     stop=stop_after_attempt(5),
@@ -60,14 +55,13 @@ async def send_to_provider(operationId: str, amount: str, currency: str = "RUB")
         raise ProviderError(f"Unexpected status: {response.status_code}")
 
 
-router = APIRouter(tags=["provider"])
-@router.post("/receipts", status_code=204)
-async def handle_receipt(data: ReceiptData, session: AsyncSession = Depends(get_db)):
-    try:
-        await process_receipt(session, data)
-        await session.commit()
-    except OperationNotFoundError:
-        raise HTTPException(404, "Operation not found")
-    except PaymentIdMissmatchError:
-        raise HTTPException(409, "ProviderPaymentId mismatch")
-    return
+async def reset_query(session: AsyncSession):
+    operations = await get_processing_operations(session)
+
+    for operation in operations:
+        asyncio.create_task(
+            send_to_provider(
+                operation.operationId,
+                operation.amount
+            )
+        )
