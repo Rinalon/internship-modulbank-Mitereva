@@ -80,7 +80,7 @@ async def get_processing_operations(session: AsyncSession) -> list[Operation]:
 async def update_operation(session: AsyncSession, operationId: str, updData: OperationUpdate) -> None:
     operation = await get_operation_for_update(session, operationId)
     if operation is None:
-        raise OperationNotFoundError(operationId),
+        raise OperationNotFoundError(operationId)
 
     updated = False
     new_event = Event(type=EventTypes.processing, operationId=operationId, message="")
@@ -93,7 +93,7 @@ async def update_operation(session: AsyncSession, operationId: str, updData: Ope
             new_event.status = updData.status
             new_event.message += f"Change status from {operation.status} to {updData.status}. "
         else:
-            raise StatusUnmatchedError(operationId, operation.status, updData.status),
+            raise StatusUnmatchedError(operationId, operation.status, updData.status)
 
     if updData.providerPaymentId is not None:
         if operation.providerPaymentId is None:
