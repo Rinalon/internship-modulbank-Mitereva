@@ -99,8 +99,8 @@ async def test_submit_operation_created(client, session):
     )
     await create_operation(session, data)
 
-    # Мокаем send_to_provider, чтобы не делать реальный запрос
-    with patch("src.services.send_to_provider", new_callable=AsyncMock) as mock_send:
+    # Моковый send_to_provider
+    with patch("src.api.operations.send_to_provider", new_callable=AsyncMock) as mock_send:
         mock_send.return_value = None
         response = await client.post("/operations/test-api-submit/submit")
         assert response.status_code == 202

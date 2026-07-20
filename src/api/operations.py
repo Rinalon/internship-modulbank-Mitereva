@@ -16,7 +16,7 @@ from src.db.schemas import (
 )
 from src.db.crud import (
     get_operation as read_operation,
-    create_operation,
+    create_operation as make_operation,
     update_operation,
     get_events as read_events,
     create_event
@@ -27,12 +27,12 @@ router = APIRouter(prefix="/operations", tags=["operations"])
 
 @router.get("/{id}", response_model=OperationResponse)
 async def get_operation(id: str, session: AsyncSession = Depends(get_db)):
-    try:
-        operation = await read_operation(session, id)
+    operation = await read_operation(session, id)
 
-        return operation
-    except OperationNotFoundError:
+    if not operation:
         raise HTTPException(status_code=404, detail="Operation not found")
+
+    return operation
 
 @router.get("/{id}/events", response_model=list[EventResponse])
 async def get_events(id: str, session: AsyncSession = Depends(get_db)):
@@ -45,7 +45,7 @@ async def get_events(id: str, session: AsyncSession = Depends(get_db)):
 @router.post("/", response_model=OperationResponse, status_code=201)
 async def create_operation(operation_data: OperationCreate, session: AsyncSession = Depends(get_db)):
     try:
-        new_operation = await create_operation(session, operation_data)
+        new_operation = await make_operation(session, operation_data)
 
         return new_operation
     except OperationExistsError:
@@ -62,7 +62,7 @@ async def submit_operation(id: str,session: AsyncSession = Depends(get_db)):
 
     if operation.status != OperationStates.created:
         response_data = OperationResponse.model_validate(operation)
-        return JSONResponse(status_code=200, content=response_data.model_dump())
+        return JSONResponse(status_code=200, content=response_data.model_dump(mode='json'))
 
     changes = OperationUpdate(status=OperationStates.processing)
     event = EventCreate(
@@ -78,6 +78,6 @@ async def submit_operation(id: str,session: AsyncSession = Depends(get_db)):
     asyncio.create_task(send_to_provider(id, operation.amount))
 
     response_data = OperationResponse.model_validate(operation)
-    return JSONResponse(status_code=202, content=response_data.model_dump())
+    return JSONResponse(status_code=202, content=response_data.model_dump(mode='json'))
 
 
