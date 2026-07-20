@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 engine = create_engine(
-    url=settings.database_url_psycopg,
+    url=settings.database_url,
     echo=settings.DEBUG,
     #pool_size=5,
     #max_overflow=2
