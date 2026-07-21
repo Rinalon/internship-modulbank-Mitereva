@@ -1,12 +1,12 @@
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
-from src.core import OperationStates
 from uuid import UUID as PY_UUID
+from datetime import datetime
+from typing import Literal
 
 class ReceiptData(BaseModel):
     operationId: str
     providerPaymentId: PY_UUID
-    result: OperationStates
+    result: Literal["COMPLETED", "REJECTED"]
     message: str
     occurredAt: datetime
 

@@ -14,7 +14,7 @@ from src.db.schemas import (
     ReceiptData,
     EventCreate,
 )
-from src.core import OperationStates, EventTypes
+from src.core import OperationStates, EventTypes, ReceiptResultTypes
 from src.core.exceptions import (
     OperationExistsError,
     OperationNotFoundError,
@@ -149,7 +149,7 @@ async def test_process_receipt_success(session):
     receipt = ReceiptData(
         operationId="test-receipt",
         providerPaymentId=uuid4(),
-        result=OperationStates.completed,
+        result=ReceiptResultTypes.completed,
         message="Payment completed",
         occurredAt=datetime.now(timezone.utc),
     )
@@ -181,7 +181,7 @@ async def test_process_receipt_already_completed(session):
     receipt1 = ReceiptData(
         operationId="test-completed",
         providerPaymentId=uuid4(),
-        result=OperationStates.completed,
+        result=ReceiptResultTypes.completed,
         message="Completed",
         occurredAt=datetime.now(timezone.utc),
     )
@@ -191,7 +191,7 @@ async def test_process_receipt_already_completed(session):
     receipt2 = ReceiptData(
         operationId="test-completed",
         providerPaymentId=uuid4(),
-        result=OperationStates.completed,
+        result=ReceiptResultTypes.completed,
         message="Another receipt",
         occurredAt=datetime.now(timezone.utc),
     )
@@ -226,7 +226,7 @@ async def test_process_receipt_mismatch_provider_id(session):
     receipt = ReceiptData(
         operationId="test-mismatch",
         providerPaymentId=uuid4(),
-        result=OperationStates.completed,
+        result=ReceiptResultTypes.completed,
         message="Mismatch",
         occurredAt=datetime.now(timezone.utc),
     )

@@ -15,7 +15,6 @@ class EventTypes(PyEnum):
     provider_response = "PROVIDER_RESPONSE"
     receipt_ignored = "RECEIPT_IGNORED"
 
-
 VALID_TRANSITIONS = {
     OperationStates.created: {OperationStates.processing},
     OperationStates.processing: {

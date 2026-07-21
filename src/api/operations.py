@@ -6,12 +6,11 @@ from src.core.exceptions import (
     OperationExistsError,
     OperationNotFoundError
 )
-from src.core import get_db, OperationStates, EventTypes
+from src.core import get_db, OperationStates
 from src.db.schemas import (
     OperationCreate,
     OperationUpdate,
     OperationResponse,
-    EventCreate,
     EventResponse
 )
 from src.db.crud import (
@@ -19,7 +18,6 @@ from src.db.crud import (
     create_operation as make_operation,
     update_operation,
     get_events as read_events,
-    create_event
 )
 from src.services import send_to_provider
 
@@ -65,19 +63,18 @@ async def submit_operation(id: str,session: AsyncSession = Depends(get_db)):
         return JSONResponse(status_code=200, content=response_data.model_dump(mode='json'))
 
     changes = OperationUpdate(status=OperationStates.processing)
-    event = EventCreate(
-        type=EventTypes.processing,
-        operationId=operation.operationId,
-        fromStatus=operation.status,
-        toStatus=OperationStates.processing,
-        message=f"Change status from {operation.status} to {OperationStates.processing}"
-    )
-    await update_operation(session=session, updData=changes, operationId=id)
-    await create_event(session=session, event=event)
+    updated = await update_operation(session=session, updData=changes, operationId=id)
+
+    if not updated:
+        response_data = OperationResponse.model_validate(operation)
+        return JSONResponse(
+            status_code=200,
+            content=response_data.model_dump(mode='json')
+        )
+
+    await session.refresh(operation)
+    response_data = OperationResponse.model_validate(operation)
 
     asyncio.create_task(send_to_provider(id, operation.amount))
 
-    response_data = OperationResponse.model_validate(operation)
     return JSONResponse(status_code=202, content=response_data.model_dump(mode='json'))
-
-

@@ -133,22 +133,22 @@ class TestReceiptData:
         data = ReceiptData(
             operationId="valid-completed",
             providerPaymentId=pid,
-            result=OperationStates.completed,
+            result="COMPLETED",
             message="Payment completed",
             occurredAt=datetime.now(timezone.utc),
         )
-        assert data.result == OperationStates.completed
+        assert data.result == OperationStates.completed.value
 
     def test_valid_receipt_rejected(self):
         pid = uuid4()
         data = ReceiptData(
             operationId="valid-rejected",
             providerPaymentId=pid,
-            result=OperationStates.rejected,
+            result="REJECTED",
             message="Payment rejected",
             occurredAt=datetime.now(timezone.utc),
         )
-        assert data.result == OperationStates.rejected
+        assert data.result == OperationStates.rejected.value
 
     def test_receipt_invalid_result(self):
         with pytest.raises(ValidationError) as exc_info:
@@ -166,7 +166,7 @@ class TestReceiptData:
         with pytest.raises(ValidationError):
             ReceiptData(
                 operationId="missing-fields",
-                result=OperationStates.completed,
+                result="COMPLETED",
                 message="Test"
             )
 
