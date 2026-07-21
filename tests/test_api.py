@@ -225,7 +225,7 @@ async def test_receipt_already_completed(client, session):
 
     # Проверяем, что providerPaymentId не изменился
     op = await get_operation(session, "test-api-completed")
-    assert op.providerPaymentId == first_receipt["providerPaymentId"]
+    assert str(op.providerPaymentId) == first_receipt["providerPaymentId"]
 
 
 @pytest.mark.asyncio
