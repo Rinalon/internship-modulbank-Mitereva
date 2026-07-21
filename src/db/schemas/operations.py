@@ -39,6 +39,7 @@ class OperationResponse(BaseModel):
     currency: Literal["RUB"] = "RUB"
     status: OperationStates
     providerPaymentId: Optional[PY_UUID] = None
+    description: str
     createdAt: datetime
     updatedAt: datetime
 
