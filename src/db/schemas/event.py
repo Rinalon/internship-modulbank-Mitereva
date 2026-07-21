@@ -34,6 +34,7 @@ class EventCreate(BaseModel):
 
 
 class EventResponse(BaseModel):
+    eventId: int
     type: EventTypes
     operationId: str
     providerPaymentId: Optional[PY_UUID] = None
