@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 from datetime import datetime, timezone
 from uuid import uuid4
-from src.core.exceptions import EventTypeError
+from src.core.exceptions import EventTypeError, VoidUpdateError
 
 from src.db.schemas import (
     OperationCreate,
@@ -16,12 +16,12 @@ from src.core import OperationStates, EventTypes
 class TestOperationCreate:
     def test_valid_operation(self):
         data = OperationCreate(
-            operationId="test-123",
+            operationId="test-valid",
             amount="100.00",
             currency="RUB",
             description="Test operation",
         )
-        assert data.operationId == "test-123"
+        assert data.operationId == "test-valid"
         assert data.amount == "100.00"
         assert data.currency == "RUB"
 
@@ -41,28 +41,18 @@ class TestOperationCreate:
         "abc",
         "100,00",
         ".50",
+        "-10.00"
     ])
-    def test_operation_create_invalid_amount_format(self, amount):
+    def test_operation_create_invalid_amount(self, amount):
         with pytest.raises(ValidationError) as exc_info:
             OperationCreate(
-                operationId="test-123",
+                operationId=("invalid-amount-" + amount),
                 amount=amount,
                 currency="RUB",
                 description="Test",
             )
         errors = exc_info.value.errors()
         assert any(e["loc"][0] == "amount" and e["type"] == "string_pattern_mismatch" for e in errors)
-
-    def test_amount_positive(self):
-        with pytest.raises(ValidationError) as exc_info:
-            OperationCreate(
-                operationId="test-123",
-                amount="-10.00",
-                currency="RUB",
-                description="Test",
-            )
-        errors = exc_info.value.errors()
-        assert any(e["loc"][0] == "amount" for e in errors)
 
     @pytest.mark.parametrize("currency", [
         "USD",
@@ -73,7 +63,7 @@ class TestOperationCreate:
     def test_currency_only_rub(self,currency):
         with pytest.raises(ValidationError) as exc_info:
             OperationCreate(
-                operationId="test-123",
+                operationId=("test-currency-" + currency),
                 amount="100.00",
                 currency=currency,
                 description="Test",
@@ -83,7 +73,7 @@ class TestOperationCreate:
 
     def test_lower_rub(selfy):
         data = OperationCreate(
-            operationId="test-123",
+            operationId="lower-rub",
             amount="100.00",
             currency="rub",
             description="Test",
@@ -94,7 +84,7 @@ class TestOperationCreate:
         long_desc = "a" * 256
         with pytest.raises(ValidationError) as exc_info:
             OperationCreate(
-                operationId="test-123",
+                operationId="max-length",
                 amount="100.00",
                 currency="RUB",
                 description=long_desc,
@@ -104,7 +94,7 @@ class TestOperationCreate:
 
     def test_extra_fields_allowed(self):
         data = OperationCreate(
-            operationId="test-123",
+            operationId="extra-fields-allowed",
             amount="100.00",
             currency="RUB",
             description="Test",
@@ -133,16 +123,15 @@ class TestOperationUpdate:
         assert data.providerPaymentId == pid
 
     def test_operation_update_empty(self):
-        data = OperationUpdate()
-        assert data.status is None
-        assert data.providerPaymentId is None
+        with pytest.raises(VoidUpdateError):
+            data = OperationUpdate()
 
 
 class TestReceiptData:
     def test_valid_receipt_completed(self):
         pid = uuid4()
         data = ReceiptData(
-            operationId="test-123",
+            operationId="valid-completed",
             providerPaymentId=pid,
             result=OperationStates.completed,
             message="Payment completed",
@@ -153,7 +142,7 @@ class TestReceiptData:
     def test_valid_receipt_rejected(self):
         pid = uuid4()
         data = ReceiptData(
-            operationId="test-123",
+            operationId="valid-rejected",
             providerPaymentId=pid,
             result=OperationStates.rejected,
             message="Payment rejected",
@@ -164,7 +153,7 @@ class TestReceiptData:
     def test_receipt_invalid_result(self):
         with pytest.raises(ValidationError) as exc_info:
             ReceiptData(
-                operationId="test-123",
+                operationId="invalid-result",
                 providerPaymentId=uuid4(),
                 result="INVALID",  # невалидный статус
                 message="Invalid",
@@ -176,7 +165,7 @@ class TestReceiptData:
     def test_receipt_missing_fields(self):
         with pytest.raises(ValidationError):
             ReceiptData(
-                operationId="test-123",
+                operationId="missing-fields",
                 result=OperationStates.completed,
                 message="Test"
             )
@@ -186,7 +175,7 @@ class TestEventCreate:
 
         data = EventCreate(
             type=EventTypes.created,
-            operationId="test-123",
+            operationId="valid-event",
             fromStatus=None,
             toStatus=OperationStates.created,
             message="Operation created",
@@ -196,7 +185,7 @@ class TestEventCreate:
     def test_valid_event_processing(self):
         data = EventCreate(
             type=EventTypes.processing,
-            operationId="test-123",
+            operationId="proccess-event",
             fromStatus=OperationStates.created,
             toStatus=OperationStates.processing,
             message="Status changed",
@@ -229,7 +218,7 @@ class TestEventCreate:
         with pytest.raises(EventTypeError):
             EventCreate(
                 type=EventTypes.created,
-                operationId="test-123",
+                operationId="status-mismatch",
                 fromStatus=OperationStates.processing,
                 toStatus=OperationStates.created,
                 message="Invalid",
@@ -240,7 +229,7 @@ class TestEventCreate:
         with pytest.raises(ValidationError) as exc_info:
             EventCreate(
                 type=EventTypes.created,
-                operationId="test-123",
+                operationId="max-length-event",
                 fromStatus=None,
                 toStatus=OperationStates.created,
                 message=long_msg,
@@ -255,7 +244,7 @@ class TestOperationResponse:
         from datetime import datetime
 
         response = OperationResponse(
-            operationId="test-123",
+            operationId="response-serialization",
             amount="100.00",
             currency="RUB",
             description="Test",
@@ -277,7 +266,7 @@ class TestOperationResponse:
 
         pid = uuid4()
         response = OperationResponse(
-            operationId="test-123",
+            operationId="resp-with-povider",
             amount="100.00",
             currency="RUB",
             description="Test",
