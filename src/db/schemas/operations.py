@@ -2,12 +2,13 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_validator
+    field_validator, model_validator
 )
 from uuid import UUID as PY_UUID
 from datetime import datetime
 from typing import Optional, Literal
 from src.core import OperationStates
+from src.core.exceptions import VoidUpdateError
 
 class OperationCreate(BaseModel):
     operationId: str
@@ -26,6 +27,11 @@ class OperationCreate(BaseModel):
 class OperationUpdate(BaseModel):
     status: Optional[OperationStates] = None
     providerPaymentId: Optional[PY_UUID] = None
+
+    @model_validator(mode="after")
+    def not_none_scheme(self):
+        if self.providerPaymentId is None and self.status is None:
+            raise  VoidUpdateError()
 
 class OperationResponse(BaseModel):
     operationId: str

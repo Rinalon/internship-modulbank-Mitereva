@@ -1,5 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
+from starlette import status
+
 from src.db.schemas import OperationCreate, OperationUpdate, ReceiptData
 from src.db.models import Operation, Event
 from src.core.exceptions import (
@@ -77,51 +79,66 @@ async def get_processing_operations(session: AsyncSession) -> list[Operation]:
     )
     return list(results.scalars().all())
 
-async def update_operation(session: AsyncSession, operationId: str, updData: OperationUpdate) -> None:
+async def update_operation(session: AsyncSession, operationId: str, updData: OperationUpdate) -> bool:
     operation = await get_operation_for_update(session, operationId)
     if operation is None:
         raise OperationNotFoundError(operationId)
 
     updated = False
     new_event = Event(
-        type=EventTypes.processing,
         operationId=operationId,
         fromStatus=operation.status,
         message=""
     )
 
     if updData.status is not None:
-        if validate_change_statuses(operation.status, updData.status):
-            operation.status = updData.status
-            updated = True
+        if operation.status != updData.status:
+            if not validate_change_statuses(operation.status, updData.status):
+                raise StatusUnmatchedError(operationId, operation.status, updData.status)
 
-            new_event.toStatus = updData.status
-            new_event.message += f"Change status from {operation.status} to {updData.status}. "
-        else:
-            raise StatusUnmatchedError(operationId, operation.status, updData.status)
+            old_status = operation.status
+            stmt = (
+                update(Operation)
+                .where(Operation.operationId == operationId)
+                .where(Operation.status == old_status)
+                .values(status=updData.status, updatedAt=datetime.now(timezone.utc))
+            )
+            result = await session.execute(stmt)
+
+            if result.rowcount > 0:
+                updated = True
+                operation.status = updData.status
+
+                new_event.type = EventTypes.processing
+                new_event.toStatus = updData.status
+                new_event.message += f"Change status from {old_status} to {updData.status}."
+
+            else:
+                await session.refresh(operation)
 
     if updData.providerPaymentId is not None:
-        new_event.type = EventTypes.provider_response
-
         if operation.providerPaymentId is None:
             operation.providerPaymentId = updData.providerPaymentId
+            operation.updatedAt = datetime.now(timezone.utc)
 
             updated = True
+            new_event.type = EventTypes.provider_response
             new_event.providerPaymentId = updData.providerPaymentId
+            new_event.toStatus = updData.status or operation.status
             new_event.message += "Added provider payment id."
+
+
 
         elif operation.providerPaymentId != updData.providerPaymentId:
             raise PaymentIdAlreadySetError(operationId)
 
     if updated:
-        new_event.toStatus = new_event.toStatus or OperationStates.processing
-
-        operation.updatedAt = datetime.now(timezone.utc)
-        new_event.occurredAt = datetime.now(timezone.utc)
-
+        new_event.occurredAt=datetime.now(timezone.utc)
         session.add(new_event)
         await session.commit()
         await session.refresh(operation)
+
+    return updated
 
 async def process_receipt(session: AsyncSession, data: ReceiptData):
     operationId = data.operationId

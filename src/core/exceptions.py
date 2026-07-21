@@ -40,6 +40,10 @@ class StatusUnmatchedError(AppError):
             f"Invalid status transition for operation {operationId}: cannot change from {current} to {attempted}"
         )
 
+class VoidUpdateError(AppError):
+    def __init__(self):
+        super().__init__("Update must have not none data")
+
 class EventTypeError(AppError):
     def __init__(self):
         super().__init__(

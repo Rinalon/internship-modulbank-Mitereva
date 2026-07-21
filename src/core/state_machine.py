@@ -18,7 +18,11 @@ class EventTypes(PyEnum):
 
 VALID_TRANSITIONS = {
     OperationStates.created: {OperationStates.processing},
-    OperationStates.processing: {OperationStates.completed, OperationStates.rejected},
+    OperationStates.processing: {
+                                    OperationStates.processing,
+                                    OperationStates.completed,
+                                    OperationStates.rejected
+                                },
     OperationStates.completed: set(),
     OperationStates.rejected: set(),
 }

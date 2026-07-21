@@ -12,7 +12,6 @@ router = APIRouter(tags=["receipts"])
 async def handle_receipt(data: ReceiptData, session: AsyncSession = Depends(get_db)):
     try:
         await process_receipt(session, data)
-        await session.commit()
     except OperationNotFoundError:
         raise HTTPException(404, "Operation not found")
     except PaymentIdMissmatchError:
