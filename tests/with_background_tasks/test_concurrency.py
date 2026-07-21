@@ -12,6 +12,7 @@ from src.db.crud import (
 from src.db.schemas import OperationCreate, OperationUpdate
 from src.core import OperationStates, AsyncSessionLocal
 
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_concurrent_submit_same_operation(session):
     data = OperationCreate(

@@ -22,18 +22,8 @@ TEST_DATABASE_URL = (
     f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}"
     f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 )
-
-test_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=False,
-    poolclass=NullPool,
-)
-
-TestAsyncSessionLocal = async_sessionmaker(
-    test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+test_engine = None
+TestAsyncSessionLocal = None
 
 
 @pytest.fixture(scope="session")
@@ -45,17 +35,43 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture(scope="session")
+def async_engine(event_loop):
+    global test_engine, TestAsyncSessionLocal
+    test_engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        poolclass=NullPool,
+    )
+    TestAsyncSessionLocal = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+    yield test_engine
+    test_engine.sync_engine.dispose()
+
+
 @pytest_asyncio.fixture(scope="function")
-async def session():
+async def session(async_engine):
+    test_engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        poolclass=NullPool,
+    )
+
+    TestAsyncSessionLocal = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
     async with test_engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
-
         await conn.run_sync(Base.metadata.create_all)
 
     async with TestAsyncSessionLocal() as sess:
         yield sess
-
         await sess.rollback()
         await sess.close()

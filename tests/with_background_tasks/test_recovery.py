@@ -11,6 +11,7 @@ from src.services.provider import reset_query
 
 from conftest import TestAsyncSessionLocal
 
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_recovery_after_restart(session):
     data = OperationCreate(

@@ -10,6 +10,7 @@ from src.core import OperationStates
 from src.core.exceptions import ProviderUnavailableError, ProviderError
 from src.services.provider import send_to_provider
 
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_provider_503_retry(session):
     data = OperationCreate(
@@ -33,7 +34,7 @@ async def test_provider_503_retry(session):
         op = await get_operation(session, "test-provider-503")
         assert str(op.providerPaymentId) == result
 
-
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_provider_timeout(session):
     data = OperationCreate(
@@ -54,7 +55,7 @@ async def test_provider_timeout(session):
     op = await get_operation(session, "test-provider-timeout")
     assert op.status == OperationStates.processing
 
-
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_provider_network_error(session):
     data = OperationCreate(
@@ -76,7 +77,7 @@ async def test_provider_network_error(session):
     op = await get_operation(session, "test-provider-network")
     assert op.status == OperationStates.processing
 
-
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_provider_success_after_retry(session):
     data = OperationCreate(
@@ -104,7 +105,7 @@ async def test_provider_success_after_retry(session):
     op = await get_operation(session, "test-provider-retry-success")
     assert str(op.providerPaymentId) == provider_id
 
-
+@pytest.mark.background
 @pytest.mark.asyncio
 async def test_network_error_keeps_status_processing(session):
     data = OperationCreate(
