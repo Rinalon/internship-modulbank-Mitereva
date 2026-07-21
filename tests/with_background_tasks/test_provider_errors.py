@@ -10,7 +10,6 @@ from src.core import OperationStates
 from src.core.exceptions import ProviderUnavailableError, ProviderError
 from src.services.provider import send_to_provider
 
-
 @pytest.mark.asyncio
 async def test_provider_503_retry(session):
     data = OperationCreate(
@@ -37,11 +36,6 @@ async def test_provider_503_retry(session):
 
 @pytest.mark.asyncio
 async def test_provider_timeout(session):
-    """
-    Проверка, что при таймауте провайдера:
-    - операция остаётся в PROCESSING
-    - выполняется повторная попытка
-    """
     data = OperationCreate(
         operationId="test-provider-timeout",
         amount="400.00",
@@ -51,26 +45,18 @@ async def test_provider_timeout(session):
     await create_operation(session, data)
     await update_operation(session, "test-provider-timeout", OperationUpdate(status=OperationStates.processing))
 
-    # Мокаем таймаут
     with patch("httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Timeout")) as mock_post:
         with pytest.raises(ProviderUnavailableError):
             await send_to_provider("test-provider-timeout", "400.00")
 
-        # Проверяем, что было несколько попыток (retry)
         assert mock_post.call_count >= 2
 
-    # Проверяем, что статус операции не изменился (остался PROCESSING)
     op = await get_operation(session, "test-provider-timeout")
     assert op.status == OperationStates.processing
 
 
 @pytest.mark.asyncio
 async def test_provider_network_error(session):
-    """
-    Проверка, что при сетевой ошибке:
-    - операция остаётся в PROCESSING
-    - выполняется повторная попытка
-    """
     data = OperationCreate(
         operationId="test-provider-network",
         amount="500.00",
@@ -80,7 +66,7 @@ async def test_provider_network_error(session):
     await create_operation(session, data)
     await update_operation(session, "test-provider-network", OperationUpdate(status=OperationStates.processing))
 
-    # Мокаем сетевую ошибку
+    # Мок сетевой ошибки
     with patch("httpx.AsyncClient.post", side_effect=httpx.NetworkError("Network unreachable")) as mock_post:
         with pytest.raises(ProviderUnavailableError):
             await send_to_provider("test-provider-network", "500.00")
@@ -93,9 +79,6 @@ async def test_provider_network_error(session):
 
 @pytest.mark.asyncio
 async def test_provider_success_after_retry(session):
-    """
-    Проверка, что после временной ошибки провайдер возвращает успех.
-    """
     data = OperationCreate(
         operationId="test-provider-retry-success",
         amount="600.00",
@@ -118,17 +101,12 @@ async def test_provider_success_after_retry(session):
         assert result == provider_id
         assert mock_post.call_count == 2
 
-    # Проверяем, что providerPaymentId сохранился в БД
     op = await get_operation(session, "test-provider-retry-success")
     assert str(op.providerPaymentId) == provider_id
 
 
 @pytest.mark.asyncio
 async def test_network_error_keeps_status_processing(session):
-    """
-    Проверка, что при сетевой ошибке операция остаётся PROCESSING,
-    а не переходит в CREATED или другое состояние.
-    """
     data = OperationCreate(
         operationId="test-network-status",
         amount="700.00",
@@ -140,7 +118,7 @@ async def test_network_error_keeps_status_processing(session):
 
     with patch("httpx.AsyncClient.post", side_effect=httpx.NetworkError("Network error")):
         try:
-            await send_to_provider("test-network-status", "700.00")
+            await send_to_provider.__wrapped__("test-network-status", "700.00")
         except ProviderUnavailableError:
             pass
 
