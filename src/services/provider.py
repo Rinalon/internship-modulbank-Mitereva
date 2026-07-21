@@ -3,7 +3,6 @@ from src.db.crud import update_operation, get_processing_operations
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from src.core.exceptions import ProviderUnavailableError, ProviderError
 from src.core import settings, AsyncSessionLocal
-
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -19,7 +18,11 @@ import httpx
     retry=retry_if_exception_type(ProviderUnavailableError),
     reraise=True
 )
-async def send_to_provider(operationId: str, amount: str, currency: str = "RUB"):
+async def send_to_provider(
+        operationId: str,
+        amount: str,
+        currency: str = "RUB"
+):
     url = f"{settings.PROVIDER_URL}/payments"
     headers = {
         "Idempotency-Key": operationId,
@@ -41,9 +44,10 @@ async def send_to_provider(operationId: str, amount: str, currency: str = "RUB")
     if response.status_code == 202:
         data = response.json()
         providerPaymentId = data.get("providerPaymentId")
-        async with AsyncSessionLocal() as session:
+
+        async with AsyncSessionLocal() as sess:
             updData = OperationUpdate(providerPaymentId=providerPaymentId)
-            await update_operation(session, operationId, updData)
+            await update_operation(sess, operationId, updData)
         return providerPaymentId
 
     elif response.status_code == 503:
@@ -51,13 +55,17 @@ async def send_to_provider(operationId: str, amount: str, currency: str = "RUB")
     else:
         raise ProviderError(f"Unexpected status: {response.status_code}")
 
+
 async def reset_query(session: AsyncSession):
     operations = await get_processing_operations(session)
-
+    tasks = []
     for operation in operations:
-        asyncio.create_task(
+        task = asyncio.create_task(
             send_to_provider(
                 operation.operationId,
-                operation.amount
+                operation.amount,
+                operation.currency,
             )
         )
+        tasks.append(task)
+    return tasks if tasks else None
