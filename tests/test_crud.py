@@ -14,7 +14,7 @@ from src.db.schemas import (
     ReceiptData,
     EventCreate,
 )
-from src.core import OperationStates, EventTypes, ReceiptResultTypes
+from src.core import OperationStates, EventTypes
 from src.core.exceptions import (
     OperationExistsError,
     OperationNotFoundError,
