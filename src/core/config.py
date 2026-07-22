@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     DB_PASS: str
     DB_NAME: str
     PROVIDER_URL: str
-    DEBUG: bool = True
+    DEBUG: bool
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent.parent / ".env",
