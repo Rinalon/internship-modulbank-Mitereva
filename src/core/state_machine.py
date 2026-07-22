@@ -26,6 +26,13 @@ VALID_TRANSITIONS = {
     OperationStates.rejected: set(),
 }
 
+STATUS_TO_EVENT_TYPE = {
+    OperationStates.processing: EventTypes.processing,
+    OperationStates.completed: EventTypes.completed,
+    OperationStates.rejected: EventTypes.rejected,
+}
+
+
 def generate_event_types(transitions: dict) -> dict:
     event_map = defaultdict(set)
     for from_status, to_set in transitions.items():

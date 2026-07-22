@@ -1,4 +1,4 @@
-from src.db.schemas.operations import (
+from src.db.schemas.operation import (
     OperationCreate,
     OperationUpdate,
     OperationResponse

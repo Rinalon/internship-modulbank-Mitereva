@@ -10,6 +10,7 @@ from src.core.state_machine import (
     validate_change_statuses,
     EventTypes,
     validate_event_type,
+    STATUS_TO_EVENT_TYPE,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "validate_event_type",
     "get_db",
     "AsyncSessionLocal",
+    "STATUS_TO_EVENT_TYPE"
 ]

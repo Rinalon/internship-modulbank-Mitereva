@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from src.db.schemas import EventCreate
 from src.db.models import Event
-from src.db.crud.operations import get_operation
+from src.db.crud.operation import get_operation
 from src.core.exceptions import OperationNotFoundError
 
 from datetime import datetime, timezone
