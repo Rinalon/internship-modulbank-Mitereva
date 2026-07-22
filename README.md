@@ -62,7 +62,7 @@ GET /health
 ---
 ### Создание операции
 ```http
-POST /operations
+POST /operations/
 Content-Type: application/json
 ```
 Тело запроса:
@@ -217,7 +217,7 @@ Content-Type: application/json
 Создание операции
 
 ```bash
-curl -X POST http://localhost:8080/operations \
+curl -X POST http://localhost:8080/operations/ \
      -H "Content-Type: application/json" \
      -d '{"operationId":"op-123","amount":"1000.00","currency":"RUB","description":"Test"}'
 ```
