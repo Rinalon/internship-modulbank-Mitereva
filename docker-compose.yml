@@ -1,0 +1,68 @@
+services:
+  candidate-service:
+    build: .
+    container_name: candidate-service
+    ports:
+      - "8080:8080"               # Порт API на хосте
+    environment:
+      # URL провайдера
+      PROVIDER_URL: http://provider-simulator:8081
+
+      # Подключение к PostgreSQL
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-candidate}
+      DB_PASS: ${DB_PASS:-candidate_pass}
+      DB_NAME: ${DB_NAME:-candidate_db}
+      DEBUG: ${DEBUG:-False}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Симулятор провайдера
+  provider-simulator:
+    image: ghcr.io/fintech-dev-lab/internship-provider-simulator:v0.2.0
+    container_name: provider-simulator
+    ports:
+      - "8081:8081"
+    environment:
+      CALLBACK_URL: http://candidate-service:8080/receipts
+    depends_on:
+      - candidate-service
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # PostgreSQL
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-candidate}
+      POSTGRES_PASSWORD: ${DB_PASS:-candidate_pass}
+      POSTGRES_DB: ${DB_NAME:-candidate_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-candidate} -d ${DB_NAME:-candidate_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+
+# Сети и тома
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:       # Для данных PostgreSQL
